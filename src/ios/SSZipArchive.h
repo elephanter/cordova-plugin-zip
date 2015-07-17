@@ -21,11 +21,11 @@
 + (BOOL)unzipFileAtPath:(NSString *)path toDestination:(NSString *)destination overwrite:(BOOL)overwrite password:(NSString *)password error:(NSError **)error delegate:(id<SSZipArchiveDelegate>)delegate;
 
 // Zip
-+ (BOOL)createZipFileAtPath:(NSString *)path withFilesAtPaths:(NSArray *)filenames;
++ (BOOL)createZipFileAtPath:(NSString *)path withFilesAtPaths:(NSArray *)filenames withFilesNames:(NSArray*)names;
 
 - (id)initWithPath:(NSString *)path;
 - (BOOL)open;
-- (BOOL)writeFile:(NSString *)path;
+- (BOOL)writeFile:(NSString *)path filename:(NSString *)filename;
 - (BOOL)writeData:(NSData *)data filename:(NSString *)filename;
 - (BOOL)close;
 
