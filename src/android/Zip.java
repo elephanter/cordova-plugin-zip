@@ -177,119 +177,54 @@ public class Zip extends CordovaPlugin {
         }
     }
 
-    private void zipSync(CordovaArgs args, CallbackContext callbackContext) {
-        InputStream inputStream = null;
+    private void zipSync(CordovaArgs args, CallbackContext callbackContext){
         try {
-            String zipFileName = args.getString(0);
-            String outputDirectory = args.getString(1);
+            Integer BUFFER_SIZE = 32 * 1024;
 
-            // Since Cordova 3.3.0 and release of File plugins, files are accessed via cdvfile://
-            // Accept a path or a URI for the source zip.
-            Uri zipUri = getUriForArg(zipFileName);
-            Uri outputUri = getUriForArg(outputDirectory);
+            String zipFileName = args.getString(0);
+            JSONArray inputFiles = args.getJSONArray(1);
+            JSONArray zipNames = args.getJSONArray(2);
 
             CordovaResourceApi resourceApi = webView.getResourceApi();
 
-            File tempFile = resourceApi.mapUriToFile(zipUri);
-            if (tempFile == null || !tempFile.exists()) {
-                String errorMessage = "Zip file does not exist";
-                callbackContext.error(errorMessage);
-                Log.e(LOG_TAG, errorMessage);
-                return;
-            }
+            Uri zipUri = getUriForArg(zipFileName);
+            File zipFile = resourceApi.mapUriToFile(zipUri);
 
-            File outputDir = resourceApi.mapUriToFile(outputUri);
-            outputDirectory = outputDir.getAbsolutePath();
-            outputDirectory += outputDirectory.endsWith(File.separator) ? "" : File.separator;
-            if (outputDir == null || (!outputDir.exists() && !outputDir.mkdirs())){
-                String errorMessage = "Could not create output directory";
-                callbackContext.error(errorMessage);
-                Log.e(LOG_TAG, errorMessage);
-                return;
-            }
+            BufferedInputStream origin = null;
+            ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile)));
+            try {
+                byte data[] = new byte[BUFFER_SIZE];
 
-            OpenForReadResult zipFile = resourceApi.openForRead(zipUri);
-            ProgressEvent progress = new ProgressEvent();
-            progress.setTotal(zipFile.length);
-
-            inputStream = new BufferedInputStream(zipFile.inputStream);
-            inputStream.mark(10);
-            int magic = readInt(inputStream);
-
-            if (magic != 875721283) { // CRX identifier
-                inputStream.reset();
-            } else {
-                // CRX files contain a header. This header consists of:
-                //  * 4 bytes of magic number
-                //  * 4 bytes of CRX format version,
-                //  * 4 bytes of public key length
-                //  * 4 bytes of signature length
-                //  * the public key
-                //  * the signature
-                // and then the ordinary zip data follows. We skip over the header before creating the ZipInputStream.
-                readInt(inputStream); // version == 2.
-                int pubkeyLength = readInt(inputStream);
-                int signatureLength = readInt(inputStream);
-
-                inputStream.skip(pubkeyLength + signatureLength);
-                progress.setLoaded(16 + pubkeyLength + signatureLength);
-            }
-
-            // The inputstream is now pointing at the start of the actual zip file content.
-            ZipInputStream zis = new ZipInputStream(inputStream);
-            inputStream = zis;
-
-            ZipEntry ze;
-            byte[] buffer = new byte[32 * 1024];
-            boolean anyEntries = false;
-
-            while ((ze = zis.getNextEntry()) != null)
-                {
-                    anyEntries = true;
-                    String compressedName = ze.getName();
-
-                    if (ze.isDirectory()) {
-                        File dir = new File(outputDirectory + compressedName);
-                        dir.mkdirs();
-                    } else {
-                        File file = new File(outputDirectory + compressedName);
-                        file.getParentFile().mkdirs();
-                        if(file.exists() || file.createNewFile()){
-                            Log.w("Zip", "extracting: " + file.getPath());
-                            FileOutputStream fout = new FileOutputStream(file);
-                            int count;
-                            while ((count = zis.read(buffer)) != -1)
-                                {
-                                    fout.write(buffer, 0, count);
-                                }
-                            fout.close();
+                for (int i = 0; i < inputFiles.length(); i++) {
+                    FileInputStream fi = new FileInputStream(inputFiles.get(i).toString());
+                    origin = new BufferedInputStream(fi, BUFFER_SIZE);
+                    try {
+                        ZipEntry entry = new ZipEntry(zipNames.get(i).toString());
+                        out.putNextEntry(entry);
+                        int count;
+                        while ((count = origin.read(data, 0, BUFFER_SIZE)) != -1) {
+                            out.write(data, 0, count);
                         }
-
                     }
-                    progress.addLoaded(ze.getCompressedSize());
-                    updateProgress(callbackContext, progress);
-                    zis.closeEntry();
+                    finally {
+                        origin.close();
+                    }
                 }
+            }
+            finally {
+                out.close();
+                String errorMessage = "An error occurred while unzipping.";
+                callbackContext.error(errorMessage);
+            }
 
-            // final progress = 100%
-            progress.setLoaded(progress.getTotal());
-            updateProgress(callbackContext, progress);
 
-            if (anyEntries)
-                callbackContext.success();
-            else
-                callbackContext.error("Bad zip file");
+            callbackContext.success();
         } catch (Exception e) {
             String errorMessage = "An error occurred while unzipping.";
             callbackContext.error(errorMessage);
             Log.e(LOG_TAG, errorMessage, e);
         } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                }
-            }
+
         }
     }
 
