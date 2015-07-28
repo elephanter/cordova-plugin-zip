@@ -31,6 +31,7 @@ public class Zip extends CordovaPlugin {
             return true;
         }else if ("zip".equals(action)){
             zip(args, callbackContext);
+            return true;
         }
         return false;
     }
@@ -178,10 +179,11 @@ public class Zip extends CordovaPlugin {
     }
 
     private void zipSync(CordovaArgs args, CallbackContext callbackContext){
-        try {
+       try {
             Integer BUFFER_SIZE = 32 * 1024;
 
             String zipFileName = args.getString(0);
+
             JSONArray inputFiles = args.getJSONArray(1);
             JSONArray zipNames = args.getJSONArray(2);
 
@@ -196,7 +198,9 @@ public class Zip extends CordovaPlugin {
                 byte data[] = new byte[BUFFER_SIZE];
 
                 for (int i = 0; i < inputFiles.length(); i++) {
-                    FileInputStream fi = new FileInputStream(inputFiles.get(i).toString());
+                    Uri inputUri = getUriForArg(inputFiles.get(i).toString());
+                    File uriFile = resourceApi.mapUriToFile(inputUri);
+                    FileInputStream fi = new FileInputStream(uriFile);
                     origin = new BufferedInputStream(fi, BUFFER_SIZE);
                     try {
                         ZipEntry entry = new ZipEntry(zipNames.get(i).toString());
@@ -210,15 +214,13 @@ public class Zip extends CordovaPlugin {
                         origin.close();
                     }
                 }
-            }
-            finally {
-                out.close();
+                callbackContext.success();
+            }  catch (Exception e) {
                 String errorMessage = "An error occurred while unzipping.";
                 callbackContext.error(errorMessage);
+            } finally {
+                out.close();
             }
-
-
-            callbackContext.success();
         } catch (Exception e) {
             String errorMessage = "An error occurred while unzipping.";
             callbackContext.error(errorMessage);
