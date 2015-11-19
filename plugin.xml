@@ -15,6 +15,10 @@
     <clobbers target="zip" />
   </js-module>
 
+  <js-module src="src/browser/jszip.js" name="jszip">
+    <clobbers target="window.jszip" />
+  </js-module>
+
   <platform name="android">
     <source-file src="src/android/Zip.java" target-dir="src/org/apache/cordova" />
 
@@ -47,4 +51,12 @@
     </config-file>
     <framework src="libz.dylib" />
   </platform>
+
+  <platform name="browser">
+    <js-module src="src/browser/zip.js" name="ZipProxy">
+      <runs />
+    </js-module>
+
+  </platform>
+
 </plugin>
