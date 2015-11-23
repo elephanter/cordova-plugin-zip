@@ -15,7 +15,6 @@ module.exports = {
             var reader = new FileReader();
 
             reader.onloadend = function (e) {
-                console.log("EVENT", e);
                 var zip = new jszip(e.target.result);
 
                 for(var file in zip.files){
@@ -27,7 +26,7 @@ module.exports = {
 
                 function unzipfile(file, next){
                     var fileName = zip.files[file].name,
-                        filePath = [];
+                        filePath = ["/"];
 
                     console.log("unzipping file ", fileName);
 
@@ -47,9 +46,9 @@ module.exports = {
                     window.webkitResolveLocalFileSystemURL(dest, function (entry) {
 
                         function createDirs(path, callback, fail, position){
-                            console.log(path)
                             position = (typeof position == 'undefined')? 0: position;
-                            console.log("ENTRY", entry);
+
+                            if(path === "/") return callback();
 
                             var dirEntry = entry;
 
@@ -57,14 +56,8 @@ module.exports = {
                             var new_position 	= position+1;
                             var sub_path 		= path_split.slice(0,new_position).join('/');
 
-                            console.log('DirManager','mesg', 'path:'+sub_path,'DirManager');
-
-
-
                             var inner_callback = function(obj){
                                 return function(){
-                                    console.log('DirManager','mesg','inner_callback:'+path);
-
                                     createDirs(path, callback, fail, new_position);
                                 }
                             };
@@ -85,7 +78,6 @@ module.exports = {
                                 entry.createWriter(function (writer) {
                                     writer.onwrite = function (e) {
                                         console.log("file unzipped");
-                                        console.log(zip);
                                     };
 
                                     writer.write(new Blob([archive], {type: "text/plain"}));
@@ -131,6 +123,8 @@ module.exports = {
 
         var zip = new jszip();
 
+        console.log("zipping", inputFiles, "in to ", archFileName);
+
         for(var i in inputFiles){
             var file = inputFiles[i];
             var name = zipNames[i] || "unnamed";
@@ -141,7 +135,7 @@ module.exports = {
                 reader.onloadend = function (e) {
                     zip.file(name, e.target.result);
 
-                    if(i !== inputFiles.length-1) return;
+                    if(i != inputFiles.length-1) return;
 
                     archive = zip.generate({type:"blob"});
 
