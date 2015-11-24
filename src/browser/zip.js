@@ -9,7 +9,9 @@ module.exports = {
         var fileName = args[0],
             dest = args[1];
         var fileURL = encodeURI(fileName);
-        var archive = "empty";
+        var archive = "empty",
+            numberOfFiles = 0,
+            filesUnzipped = 0;
 
         window.webkitResolveLocalFileSystemURL(fileURL, function (entry) {
             var reader = new FileReader();
@@ -20,6 +22,8 @@ module.exports = {
                 for(var file in zip.files){
                     if(!zip.files.hasOwnProperty(file)) return;
 
+                    numberOfFiles++;
+
                     unzipfile(file);
 
                 }
@@ -28,7 +32,7 @@ module.exports = {
                     var fileName = zip.files[file].name,
                         filePath = ["/"];
 
-                    console.log("unzipping file ", fileName);
+                    //console.log("unzipping file ", fileName);
 
                     if(fileName.indexOf("/") > 1){
                         var filePath = fileName.split("/");
@@ -77,7 +81,11 @@ module.exports = {
                             entry.getFile(fileName, {create: true, exclusive: false}, function (entry) {
                                 entry.createWriter(function (writer) {
                                     writer.onwrite = function (e) {
-                                        console.log("file unzipped");
+                                        filesUnzipped++;
+
+                                        if(numberOfFiles == filesUnzipped){
+                                            win();
+                                        }
                                     };
 
                                     writer.write(new Blob([archive], {type: "text/plain"}));
