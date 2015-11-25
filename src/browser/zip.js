@@ -35,7 +35,7 @@ module.exports = {
                     //console.log("unzipping file ", fileName);
 
                     if(fileName.indexOf("/") > 1){
-                        var filePath = fileName.split("/");
+                        filePath = fileName.split("/");
                         filePath.pop();
                         var i = 1,
                             tmpZip = zip.folder(filePath[0]);
@@ -45,7 +45,6 @@ module.exports = {
                         }
                     }
 
-                    archive = zip.file(fileName).asArrayBuffer();
 
                     window.webkitResolveLocalFileSystemURL(dest, function (entry) {
 
@@ -80,6 +79,9 @@ module.exports = {
 
                             entry.getFile(fileName, {create: true, exclusive: false}, function (entry) {
                                 entry.createWriter(function (writer) {
+
+                                    archive = zip.file(fileName).asArrayBuffer();
+
                                     writer.onwrite = function (e) {
                                         filesUnzipped++;
 
