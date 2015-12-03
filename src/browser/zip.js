@@ -32,8 +32,6 @@ module.exports = {
                     var fileName = zip.files[file].name,
                         filePath = ["/"];
 
-                    //console.log("unzipping file ", fileName);
-
                     if(fileName.indexOf("/") > 1){
                         filePath = fileName.split("/");
                         filePath.pop();
@@ -128,48 +126,45 @@ module.exports = {
 
     zip : function zip (win, fail, args) {
         var archFileName = args[0],
-            inputFiles   = typeof args[1] == "array" ? args[1] : [args[1]],
-            zipNames     = typeof args[2] == "array" ? args[2] : [args[2]];
+            inputFiles   = typeof args[1] == "object" ? args[1] : [args[1]],
+            zipNames     = typeof args[2] == "object" ? args[2] : [args[2]];
 
         var zip = new jszip();
 
         console.log("zipping", inputFiles, "in to ", archFileName);
 
-        for(var i in inputFiles){
-            var file = inputFiles[i];
-            var name = zipNames[i] || "unnamed";
-
-            window.webkitResolveLocalFileSystemURL(file, function (entry) {
+        inputFiles.forEach(function (el, i, arr) {
+            window.webkitResolveLocalFileSystemURL(inputFiles[i], function (entry) {
                 var reader = new FileReader();
+                var name = zipNames[i] || "unnamed";
 
                 reader.onloadend = function (e) {
                     zip.file(name, e.target.result);
 
                     if(i != inputFiles.length-1) return;
 
-                    archive = zip.generate({type:"blob"});
+                    window.webkitResolveLocalFileSystemURL(archFileName, function (entry) {// expecting zip file to be created
 
-                    entry.getParent(function (entry) {
-                        entry.getFile(archFileName, {create: true, exclusive: false}, function (entry) {
-                            entry.createWriter(function (writer) {
-                                writer.onwrite = function (e) {
-                                    win();
-                                };
-                                writer.write(archive);
-                            }, function (err) {
-                                console.log(err);
-                                fail();
-                            })
+                        entry.createWriter(function (writer) {
+                            archive = zip.generate({type:"blob"});
+
+                            writer.onwrite = function (e) {
+                                win();
+                            };
+                            writer.write(archive);
                         }, function (err) {
                             console.log(err);
                             fail();
-                        });
+                        })
+                    }, function (err) {
+                        console.log(err);
+                        fail();
                     });
 
                 };
 
                 entry.file(function (file) {
-                    reader.readAsText(file);
+                    reader.readAsArrayBuffer(file);
                 });
 
             }, function (err) {
@@ -178,7 +173,7 @@ module.exports = {
 
             });
 
-        }
+        });
 
     }
 
