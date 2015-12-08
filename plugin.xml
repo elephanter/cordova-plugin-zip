@@ -6,7 +6,7 @@
   <engines>
     <engine name="cordova" version=">=3.3.0" />
   </engines>
-  <dependency id="org.apache.cordova.file" version=">=2.0.0" />
+  <dependency id="cordova-plugin-file" version=">=2.0.0" />
 
   <name>cordova-plugin-zip</name>
   <description>Unzips zip files</description>
