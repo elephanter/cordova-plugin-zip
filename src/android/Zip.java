@@ -1,13 +1,16 @@
 package org.apache.cordova;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.FileNotFoundException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 
 import android.net.Uri;
@@ -15,6 +18,7 @@ import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaResourceApi.OpenForReadResult;
 import org.apache.cordova.PluginResult;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -180,6 +184,7 @@ public class Zip extends CordovaPlugin {
 
     private void zipSync(CordovaArgs args, CallbackContext callbackContext){
        try {
+            Boolean zipok = false;
             Integer BUFFER_SIZE = 32 * 1024;
 
             String zipFileName = args.getString(0);
@@ -214,12 +219,15 @@ public class Zip extends CordovaPlugin {
                         origin.close();
                     }
                 }
-                callbackContext.success();
+                zipok = true;
             }  catch (Exception e) {
                 String errorMessage = "An error occurred while unzipping.";
                 callbackContext.error(errorMessage);
             } finally {
                 out.close();
+            }
+            if (zipok){
+                callbackContext.success();
             }
         } catch (Exception e) {
             String errorMessage = "An error occurred while unzipping.";
